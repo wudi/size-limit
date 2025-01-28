@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid/non-secure'
-import { readdir, readFile } from 'node:fs/promises'
+import { readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, parse, resolve } from 'node:path'
-import { rm, SizeLimitError } from 'size-limit'
+import { SizeLimitError } from 'size-limit'
 
 import { convertConfig } from './convert-config.js'
 import { getConfig } from './get-config.js'
@@ -23,18 +23,22 @@ function getFiles(buildResult, check) {
   let outputs = buildResult.metafile.outputs
 
   for (let key in outputs) {
-    let outputEntryName = parse(key).name
+    let outputEntryName = parse(key).base
     outputs[outputEntryName] = outputs[key]
     outputs[outputEntryName].path = resolve(key)
     delete outputs[key]
   }
 
   if (check.entry) {
-    for (let i of check.entry) {
-      if (outputs[i]) {
-        entries[i] = outputs[i]
-      } else {
-        throw new SizeLimitError('unknownEntry', i)
+    for (let entry of check.entry) {
+      let matches = Object.keys(outputs).filter(
+        key => parse(key).name === entry
+      )
+      if (matches.length === 0) {
+        throw new SizeLimitError('unknownEntry', entry)
+      }
+      for (let match of matches) {
+        entries[match] = outputs[match]
       }
     }
   } else {
@@ -59,7 +63,7 @@ export default [
     async before(config) {
       if (config.saveBundle) {
         if (config.cleanDir) {
-          await rm(config.saveBundle)
+          await rm(config.saveBundle, { force: true, recursive: true })
         } else {
           let notEmpty = await isDirNotEmpty(config.saveBundle)
           if (notEmpty) {
@@ -71,7 +75,7 @@ export default [
 
     async finally(config, check) {
       if (check.esbuildOutfile && !config.saveBundle) {
-        await rm(check.esbuildOutfile)
+        await rm(check.esbuildOutfile, { force: true, recursive: true })
       }
     },
 

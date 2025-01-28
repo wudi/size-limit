@@ -55,6 +55,7 @@ We are using [Statoscope] for this analysis.
 
 * [MobX](https://github.com/mobxjs/mobx)
 * [Material-UI](https://github.com/callemall/material-ui)
+* [Ant Design](https://github.com/ant-design/ant-design/)
 * [Autoprefixer](https://github.com/postcss/autoprefixer)
 * [PostCSS](https://github.com/postcss/postcss) reduced
   [25% of the size](https://github.com/postcss/postcss/commit/150edaa42f6d7ede73d8c72be9909f0a0f87a70f).
@@ -154,7 +155,7 @@ interactive elements, using React/Vue/Svelte lib or vanilla JS.
     ```
 
 6. If you don’t have a continuous integration service running, don’t forget
-   to add one — start with Github Actions.
+   to add one — start with GitHub Actions.
 
 </details>
 
@@ -227,7 +228,7 @@ to track the time a browser takes to compile and execute your JS.
     ```
 
 6. If you don’t have a continuous integration service running, don’t forget
-   to add one — start with Github Actions.
+   to add one — start with GitHub Actions.
 
 </details>
 
@@ -311,7 +312,7 @@ the size in bytes. Libraries like [React] are good examples for this preset.
     ```
 
 7. If you don’t have a continuous integration service running, don’t forget
-   to add one — start with Github Actions.
+   to add one — start with GitHub Actions.
 8. Add the library size to docs, it will help users to choose your project:
 
     ```diff
@@ -398,7 +399,7 @@ for this preset.
     ```
 
 7. If you don’t have a continuous integration service running, don’t forget
-   to add one — start with Github Actions.
+   to add one — start with GitHub Actions.
 8. Add the library size to docs, it will help users to choose your project:
 
     ```diff
@@ -532,6 +533,20 @@ Size Limits supports three ways to define limits config.
    ]
    ```
 
+4. or types `.size-limit.ts`:
+
+   ```ts
+   import type { SizeLimitConfig } from '../../packages/size-limit'
+
+   module.exports = [
+     {
+       path: "index.js",
+       import: "{ createStore }",
+       limit: "500 ms"
+     }
+   ] satisfies SizeLimitConfig
+   ```
+
 Each section in the config can have these options:
 
 * **path**: relative paths to files. The only mandatory option.
@@ -545,6 +560,9 @@ Each section in the config can have these options:
   Format: `100 B`, `10 kB`, `500 ms`, `1 s`.
 * **name**: the name of the current section. It will only be useful
   if you have multiple sections.
+* **message**: an optional custom message to display additional information,
+  such as guidance for resolving errors, relevant links, or instructions
+  for next steps when a limit is exceeded.
 * **entry**: when using a custom webpack config, a webpack entry could be given.
   It could be a string or an array of strings.
   By default, the total size of all entry points will be checked.
@@ -566,8 +584,15 @@ If you use Size Limit to track the size of CSS files, make sure to set
 `webpack: false`. Otherwise, you will get wrong numbers, because webpack
 inserts `style-loader` runtime (≈2 kB) into the bundle.
 
+Also, you avoid having a config and pass the limit to CLI:
+
+```sh
+npm install --save-dev @size-limit/file
+npx size-limit --limit "10 kB" dist/bundle.js
+```
+
 [Statoscope docs]: https://github.com/statoscope/statoscope/tree/master/packages/webpack-plugin#optionsreports-report
-[pattern]: https://github.com/sindresorhus/globby#globbing-patterns
+[pattern]: https://github.com/SuperchupuDev/tinyglobby
 
 ## Analyze with `--why`
 

@@ -1,6 +1,32 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## 11.1.6
+* Updated `chokidar`.
+* Updated `esbuild`.
+* Updated `jiti`.
+
+## 11.1.5
+* Reduced dependencies (by @ziebam).
+* Updated `esbuild`.
+
+## 11.1.4
+* Fixed types (by @aryaemami59).
+
+## 11.1.3
+* Updated `esbuild`.
+* Updated CSS loaders for webpack.
+
+## 11.1.2
+* Fixed CSS support in esbuild plugin (by @just-boris).
+
+## 11.1.1
+* Fixed Windows support (by @aryaemami59).
+
+## 11.1.0
+* Added TypeScript support for config (by @aryaemami59).
+* Fixed `webpack-why` regression (by @hoo00nn).
+
 ## 11.0.3
 * Fixed `.mjs` config support (by Arya Emami).
 * Updated `esbuild`.
