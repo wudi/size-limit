@@ -1,3 +1,5 @@
+import './force-colors.js'
+
 import { expect, it } from 'vitest'
 
 import createReporter from '../create-reporter'
@@ -31,7 +33,7 @@ it('renders results', () => {
           name: 'limitless',
           runTime: 0.5,
           size: 10,
-          time: 0.6
+          totalTime: 0.6
         },
         {
           loadTime: 1,
@@ -40,7 +42,7 @@ it('renders results', () => {
           runTime: 2,
           size: 102400,
           sizeLimit: 102400,
-          time: 3
+          totalTime: 3
         },
         {
           gzip: false,
@@ -49,8 +51,8 @@ it('renders results', () => {
           passed: true,
           runTime: 2,
           size: 102400,
-          time: 3,
-          timeLimit: 4
+          timeLimit: 4,
+          totalTime: 3
         }
       ]
     })
@@ -69,7 +71,7 @@ it('renders list of success checks in silent mode', () => {
             name: 'limitless',
             runTime: 0.5,
             size: 10,
-            time: 0.6
+            totalTime: 0.6
           },
           {
             loadTime: 1,
@@ -78,7 +80,7 @@ it('renders list of success checks in silent mode', () => {
             runTime: 2,
             size: 102400,
             sizeLimit: 102400,
-            time: 3
+            totalTime: 3
           }
         ]
       },
@@ -132,7 +134,7 @@ it('renders list of failed and success checks in silent mode', () => {
             name: 'limitless',
             runTime: 0.5,
             size: 10,
-            time: 0.6
+            totalTime: 0.6
           },
           {
             loadTime: 1,
@@ -141,7 +143,7 @@ it('renders list of failed and success checks in silent mode', () => {
             runTime: 2,
             size: 102400,
             sizeLimit: 102400,
-            time: 3
+            totalTime: 3
           },
           {
             name: 'big fail',
@@ -263,6 +265,24 @@ it('renders single result', () => {
   ).toMatchSnapshot()
 })
 
+it('renders custom message', () => {
+  expect(
+    results(['file'], {
+      checks: [
+        {
+          message: 'see docs for additional instructions',
+          name: 'big fail',
+          passed: false,
+          size: 101,
+          sizeLimit: 100
+        }
+      ],
+      configPath: '.size-limit.json',
+      failed: true
+    })
+  ).toMatchSnapshot()
+})
+
 it('renders config-less result', () => {
   expect(
     results(['time'], {
@@ -273,8 +293,8 @@ it('renders config-less result', () => {
           passed: false,
           runTime: 0.3,
           size: 1000,
-          time: 0.5,
-          timeLimit: 0.5
+          timeLimit: 0.5,
+          totalTime: 0.5
         }
       ],
       failed: true
@@ -299,8 +319,8 @@ it('renders JSON results', () => {
             path: '/b',
             runTime: 0.3,
             size: 1000,
-            time: 0.5,
-            timeLimit: 10
+            timeLimit: 10,
+            totalTime: 0.5
           }
         ],
         failed: true
@@ -351,6 +371,31 @@ it('renders Webpack stats help message', () => {
     results(['webpack'], {
       checks: [],
       saveBundle: 'test'
+    })
+  ).toMatchSnapshot()
+})
+
+it('renders loading time with custom message from time options for every check', () => {
+  expect(
+    results(['time'], {
+      checks: [
+        {
+          loadTime: 0.2,
+          name: 'loading message 1',
+          passed: true,
+          runTime: 0.4,
+          size: 10,
+          time: { loadingMessage: 'for ~1000 users per month' },
+          totalTime: 1.4
+        },
+        {
+          loadTime: 0.2,
+          name: 'loading message 2',
+          passed: true,
+          runTime: 0.3,
+          time: { loadingMessage: '' }
+        }
+      ]
     })
   ).toMatchSnapshot()
 })

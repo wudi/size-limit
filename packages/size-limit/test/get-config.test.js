@@ -1,5 +1,5 @@
-import { join } from 'node:path'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { dirname, join } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import calc from '../calc'
 import run from '../run'
@@ -54,23 +54,23 @@ it('creates config by CLI arguments', async () => {
   })
 })
 
-it('supports globby and main field', async () => {
-  expect(await check('globby')).toEqual({
+it('supports tinyglobby and main field', async () => {
+  expect(await check('tinyglobby')).toEqual({
     checks: [
       {
-        files: [fixture('globby', 'a1.js'), fixture('globby', 'a2.js')],
+        files: [fixture('tinyglobby', 'a1.js'), fixture('tinyglobby', 'a2.js')],
         limit: '1 kB',
         name: 'a',
         path: ['a*.js'],
         sizeLimit: 1000
       },
       {
-        files: [fixture('globby', 'b1.js')],
+        files: [fixture('tinyglobby', 'b1.js')],
         name: 'b'
       }
     ],
     configPath: 'package.json',
-    cwd: fixture('globby')
+    cwd: fixture('tinyglobby')
   })
 })
 
@@ -195,7 +195,7 @@ it('normalizes bundle and webpack arguments with --why and ui-reports', async ()
   })
 })
 
-it('should work with .mjs config file', async () => {
+it('works with .mjs config file', async () => {
   expect(await check('mjs-config-file')).toEqual({
     checks: [
       {
@@ -209,7 +209,7 @@ it('should work with .mjs config file', async () => {
   })
 })
 
-it('should work with .js config file', async () => {
+it('works with .js config file', async () => {
   expect(await check('js-config-file')).toEqual({
     checks: [
       {
@@ -223,7 +223,7 @@ it('should work with .js config file', async () => {
   })
 })
 
-it('should work with .js config file and "type": "module"', async () => {
+it('works with .js config file and "type": "module"', async () => {
   expect(await check('js-config-file-with-type-module')).toEqual({
     checks: [
       {
@@ -234,6 +234,118 @@ it('should work with .js config file and "type": "module"', async () => {
     ],
     configPath: '.size-limit.js',
     cwd: fixture('js-config-file-with-type-module')
+  })
+})
+
+it('works with .js config file and `export default` without "type": "module"', async () => {
+  expect(await check('js-config-file-esm')).toEqual({
+    checks: [
+      {
+        files: [fixture('js-config-file-esm', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.js',
+    cwd: fixture('js-config-file-esm')
+  })
+})
+
+it('works with .cjs config file and `export default` without "type": "module"', async () => {
+  expect(await check('cjs-config-file-esm')).toEqual({
+    checks: [
+      {
+        files: [fixture('cjs-config-file-esm', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.cjs',
+    cwd: fixture('cjs-config-file-esm')
+  })
+})
+
+it('works with .cjs config file and `module.exports` without "type": "module"', async () => {
+  expect(await check('cjs-config-file-cjs')).toEqual({
+    checks: [
+      {
+        files: [fixture('cjs-config-file-cjs', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.cjs',
+    cwd: fixture('cjs-config-file-cjs')
+  })
+})
+
+it('works with .ts config file and `export default` without "type": "module"', async () => {
+  expect(await check('ts-config-file-esm')).toEqual({
+    checks: [
+      {
+        files: [fixture('ts-config-file-esm', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.ts',
+    cwd: fixture('ts-config-file-esm')
+  })
+})
+
+it('works with .ts config file', async () => {
+  expect(await check('ts-config-file')).toEqual({
+    checks: [
+      {
+        files: [fixture('ts-config-file', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.ts',
+    cwd: fixture('ts-config-file')
+  })
+})
+
+it('works with .cts config file', async () => {
+  expect(await check('cts-config-file')).toEqual({
+    checks: [
+      {
+        files: [fixture('cts-config-file', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.cts',
+    cwd: fixture('cts-config-file')
+  })
+})
+
+it('works with .mts config file', async () => {
+  expect(await check('mts-config-file')).toEqual({
+    checks: [
+      {
+        files: [fixture('mts-config-file', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.mts',
+    cwd: fixture('mts-config-file')
+  })
+})
+
+it('works with .ts config file and "type": "module"', async () => {
+  expect(await check('ts-config-file-with-type-module')).toEqual({
+    checks: [
+      {
+        files: [fixture('ts-config-file-with-type-module', 'index.js')],
+        name: 'index.js',
+        path: 'index.js'
+      }
+    ],
+    configPath: '.size-limit.ts',
+    cwd: fixture('ts-config-file-with-type-module')
   })
 })
 
@@ -316,3 +428,100 @@ it('normalizes import', async () => {
     cwd: fixture('integration-esm')
   })
 })
+
+it('normalizes networkSpeed option for time plugin', async () => {
+  let cwd = 'time-network-speed'
+  expect(await check(cwd)).toEqual({
+    checks: [
+      {
+        files: [fixture(cwd, 'index.js')],
+        name: 'index.js',
+        path: 'index.js',
+        time: { networkSpeed: 20 }
+      },
+      {
+        files: [fixture(cwd, 'index.js')],
+        name: 'index.js',
+        time: { networkSpeed: 20000 }
+      }
+    ],
+    configPath: 'package.json',
+    cwd: fixture(cwd)
+  })
+})
+
+it('normalizes latency option for time plugin', async () => {
+  let cwd = 'time-latency'
+  expect(await check(cwd)).toEqual({
+    checks: [
+      {
+        files: [fixture(cwd, 'index.js')],
+        name: 'index.js',
+        path: 'index.js',
+        time: { latency: 0.2 }
+      },
+      {
+        files: [fixture(cwd, 'index.js')],
+        name: 'index.js',
+        time: { latency: 2.35 }
+      }
+    ],
+    configPath: 'package.json',
+    cwd: fixture(cwd)
+  })
+})
+    
+it('takes config from CLI config argument', async () => {
+  let cwd = 'config-file-from-arg'
+  let configPath = 'src/configs/my-size-limit.config.js'
+  expect(await check(cwd, ['--config', fixture(cwd, configPath)])).toEqual({
+    checks: [
+      {
+        files: [fixture(cwd, 'index.js')],
+        limit: 10,
+        name: 'index',
+        path: '../../index.js',
+        sizeLimit: 10
+      },
+      {
+        files: [fixture(cwd, 'src/main.js')],
+        limit: 20,
+        name: 'main',
+        path: '../main.js',
+        sizeLimit: 20
+      }
+    ],
+    configPath,
+    cwd: fixture(cwd, dirname(configPath))
+  })
+})
+
+const allConfigFileExtensions = ['mjs', 'js', 'cjs', 'ts', 'mts', 'cts']
+const exportTypes = [
+  { exportSyntax: 'export default', moduleType: 'esm' },
+  { exportSyntax: 'module.exports', moduleType: 'cjs' }
+]
+
+describe.each(allConfigFileExtensions)(
+  'config file with `.%s` extension',
+  extension => {
+    it.each(exportTypes)(
+      'works with $moduleType module syntax ($exportSyntax)',
+      async ({ moduleType }) => {
+        expect(await check(`${extension}-config-file-${moduleType}`)).toEqual({
+          checks: [
+            {
+              files: [
+                fixture(`${extension}-config-file-${moduleType}`, 'index.js')
+              ],
+              name: 'index.js',
+              path: 'index.js'
+            }
+          ],
+          configPath: `.size-limit.${extension}`,
+          cwd: fixture(`${extension}-config-file-${moduleType}`)
+        })
+      }
+    )
+  }
+)

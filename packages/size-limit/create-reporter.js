@@ -1,5 +1,6 @@
 import bytes from 'bytes-iec'
 import { join } from 'node:path'
+import readline from 'node:readline'
 import pc from 'picocolors'
 
 const { bgGreen, bgRed, black, bold, gray, green, red, yellow } = pc
@@ -42,10 +43,13 @@ function getFixText(prefix, config) {
 
   return prefix
 }
-
 function createHumanReporter(process, isSilentMode = false) {
+  let output = ''
+
   function print(...lines) {
-    process.stdout.write('  ' + lines.join('\n  ') + '\n')
+    let value = '  ' + lines.join('\n  ') + '\n'
+    output += value
+    process.stdout.write(value)
   }
 
   function formatBytes(size) {
@@ -135,6 +139,9 @@ function createHumanReporter(process, isSilentMode = false) {
             }
             let diff = formatBytes(check.size - check.sizeLimit)
             print(red(`Package size limit has exceeded by ${diff}`))
+            if (check.message) {
+              print(check.message)
+            }
           } else if (check.highlightLess && check.size < check.sizeLimit) {
             let diff = formatBytes(check.sizeLimit - check.size)
             print(bgGreen(black(`Package size is ${diff} less than limit`)))
@@ -146,12 +153,14 @@ function createHumanReporter(process, isSilentMode = false) {
           rows.push(['Size', sizeString, sizeNote])
         }
         if (typeof check.loadTime !== 'undefined') {
-          rows.push(['Loading time', formatTime(check.loadTime), 'on slow 3G'])
+          let description =
+            (check.time && check.time.loadingMessage) || 'on slow 3G'
+          rows.push(['Loading time', formatTime(check.loadTime), description])
         }
         if (typeof check.runTime !== 'undefined') {
           rows.push(
             ['Running time', formatTime(check.runTime), 'on Snapdragon 410'],
-            ['Total time', formatTime(check.time)]
+            ['Total time', formatTime(check.totalTime)]
           )
         }
 
@@ -186,6 +195,12 @@ function createHumanReporter(process, isSilentMode = false) {
         let statsFilepath = join(config.saveBundle, 'stats.json')
         print(`Webpack Stats file was saved to ${statsFilepath}`)
         print('You can review it using https://webpack.github.io/analyse')
+      }
+
+      // clean the blank line in silent mode if the output is empty
+      if (isSilentMode && !output.trim()) {
+        readline.moveCursor(process.stdout, 0, -1)
+        readline.clearLine(process.stdout, 0)
       }
     }
   }

@@ -1,8 +1,8 @@
 import filePkg from '@size-limit/file'
 import { existsSync } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { rm, SizeLimitError } from 'size-limit'
+import { SizeLimitError } from 'size-limit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import esbuildPkg from '../index.js'
@@ -37,7 +37,7 @@ async function getSize(check) {
 }
 
 afterEach(async () => {
-  await rm(DIST)
+  await rm(DIST, { force: true, recursive: true })
   vi.clearAllMocks()
 })
 
@@ -62,6 +62,14 @@ it('uses esbuild to make bundle', async () => {
   expect(config.checks[0].esbuildOutfile).toContain('size-limit-')
   expect(typeof config.checks[0].esbuildConfig).toBe('object')
   expect(existsSync(config.checks[0].esbuildOutfile)).toBe(false)
+})
+
+it('supports bundles with css', async () => {
+  let config = {
+    checks: [{ files: fixture('esm/nonjs.js') }]
+  }
+  await run(config)
+  expect(config.checks[0].size).toBe(49)
 })
 
 it('supports ignore', async () => {

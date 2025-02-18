@@ -1,7 +1,9 @@
+import './force-colors.js'
+
 import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
 
-import run from '../run'
+import run from '../run.js'
 
 vi.mock('../../time/get-running-time', () => ({
   getRunningTime: () => 1
@@ -200,6 +202,23 @@ it('throws on --compare-with argument without value', async () => {
   expect(await error('webpack', ['--why', '--compare-with'])).toMatchSnapshot()
 })
 
+it('throws on --config argument without FILE parameter', async () => {
+  expect(await error('file', ['--config'])).toMatchSnapshot()
+  expect(await error('file', ['--config', '--why'])).toMatchSnapshot()
+})
+
+it('throws on --config argument with invalid FILE parameter', async () => {
+  expect(await error('file', ['--config', 'invalid/config/path'])).toContain(
+    'no such file or directory'
+  )
+})
+
+it('throws on --config argument with invalid FILE extension', async () => {
+  expect(
+    await error('file', ['--config', 'invalid/config/path.extension'])
+  ).toContain('No loader specified for extension')
+})
+
 it('throws on no config', async () => {
   expect(await error('file')).toMatchSnapshot()
 })
@@ -355,9 +374,9 @@ it.skipIf(NODE_VERSION < 21)(
   'allows to use peer dependencies in import',
   async () => {
     await checkJson('combine', [
-      { name: 'all', size: 2051 },
+      { name: 'all', size: 2046 },
       { name: 'a', size: 1 },
-      { name: 'redux', size: 2045 }
+      { name: 'redux', size: 2043 }
     ])
   }
 )

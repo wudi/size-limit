@@ -1,8 +1,9 @@
 import bytes from 'bytes-iec'
-import { globby } from 'globby'
 import { lilconfig } from 'lilconfig'
 import { createRequire } from 'node:module'
-import { dirname, isAbsolute, join, relative } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { glob } from 'tinyglobby'
 
 import { SizeLimitError } from './size-limit-error.js'
 
@@ -20,12 +21,14 @@ let OPTIONS = {
   ignore: ['webpack', 'esbuild'],
   import: ['webpack', 'esbuild'],
   limit: true,
+  message: true,
   modifyEsbuildConfig: 'esbuild',
   modifyWebpackConfig: 'webpack',
   module: true,
   name: true,
   path: true,
   running: 'time',
+  time: 'time',
   uiReports: 'webpack',
   webpack: 'webpack'
 }
@@ -38,6 +41,14 @@ function isStrings(value) {
 function isStringsOrUndefined(value) {
   let type = typeof value
   return type === 'undefined' || type === 'string' || isStrings(value)
+}
+
+function endsWithMs(value) {
+  return / ?ms/i.test(value)
+}
+
+function endsWithS(value) {
+  return / ?s/i.test(value)
 }
 
 function checkChecks(plugins, checks) {
@@ -82,14 +93,18 @@ function toName(files, cwd) {
   return files.map(i => (i.startsWith(cwd) ? relative(cwd, i) : i)).join(', ')
 }
 
-/**
- * Dynamically imports a module from a given file path
- * and returns its default export.
- *
- * @param {string} filePath - The path to the module file to be imported.
- * @returns {Promise<any>} A promise that resolves with the default export of the module.
- */
-const dynamicImport = async filePath => (await import(filePath)).default
+const dynamicImport = async filePath =>
+  (await import(pathToFileURL(filePath).href)).default
+
+const tsLoader = async filePath => {
+  let jiti = (await import('jiti')).createJiti(fileURLToPath(import.meta.url), {
+    interopDefault: false
+  })
+
+  let config = await jiti.import(filePath, { default: true })
+
+  return config
+}
 
 export default async function getConfig(plugins, process, args, pkg) {
   let config = {
@@ -122,8 +137,12 @@ export default async function getConfig(plugins, process, args, pkg) {
   } else {
     let explorer = lilconfig('size-limit', {
       loaders: {
+        '.cjs': dynamicImport,
+        '.cts': tsLoader,
         '.js': dynamicImport,
-        '.mjs': dynamicImport
+        '.mjs': dynamicImport,
+        '.mts': tsLoader,
+        '.ts': tsLoader
       },
       searchPlaces: [
         'package.json',
@@ -131,10 +150,15 @@ export default async function getConfig(plugins, process, args, pkg) {
         '.size-limit',
         '.size-limit.js',
         '.size-limit.mjs',
-        '.size-limit.cjs'
+        '.size-limit.cjs',
+        '.size-limit.ts',
+        '.size-limit.mts',
+        '.size-limit.cts'
       ]
     })
-    let result = await explorer.search(process.cwd())
+    let result = args.config?.trim()
+      ? await explorer.load(resolve(args.config.trim()))
+      : await explorer.search(process.cwd())
 
     if (result === null) throw new SizeLimitError('noConfig')
     checkChecks(plugins, result.config)
@@ -145,7 +169,8 @@ export default async function getConfig(plugins, process, args, pkg) {
       result.config.map(async check => {
         let processed = { ...check }
         if (check.path) {
-          processed.files = await globby(check.path, { cwd: config.cwd })
+          let patterns = Array.isArray(check.path) ? check.path : [check.path]
+          processed.files = await glob(patterns, { cwd: config.cwd })
         } else if (!check.entry) {
           if (pkg.packageJson.main) {
             processed.files = [
@@ -167,9 +192,9 @@ export default async function getConfig(plugins, process, args, pkg) {
     if (!check.name) check.name = toName(check.entry || check.files, config.cwd)
     if (args.limit) check.limit = args.limit
     if (check.limit) {
-      if (/ ?ms/i.test(check.limit)) {
+      if (endsWithMs(check.limit)) {
         check.timeLimit = parseFloat(check.limit) / 1000
-      } else if (/ ?s/i.test(check.limit)) {
+      } else if (endsWithS(check.limit)) {
         check.timeLimit = parseFloat(check.limit)
       } else {
         check.sizeLimit = bytes.parse(check.limit)
@@ -200,6 +225,19 @@ export default async function getConfig(plugins, process, args, pkg) {
         }
       }
       check.import = imports
+    }
+    if (check.time) {
+      let { latency, networkSpeed } = check.time
+      if (latency) {
+        if (endsWithMs(latency)) {
+          check.time.latency = parseFloat(latency) / 1000
+        } else {
+          check.time.latency = parseFloat(latency) || 0
+        }
+      }
+      if (networkSpeed) {
+        check.time.networkSpeed = bytes.parse(networkSpeed)
+      }
     }
   }
 
